@@ -2,21 +2,21 @@
 
 namespace SeoAnalyzer;
 
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Exception\InvalidArgumentException;
-use Symfony\Component\Cache\Simple\AbstractCache;
-use Symfony\Component\Cache\Simple\FilesystemCache;
 
 class Cache
 {
     /**
-     * @var AbstractCache
+     * @var CacheInterface
      */
     public $adapter;
 
     public function __construct(string $adapterClass = null, $ttl = 300)
     {
         if (empty($adapterClass)) {
-            $adapterClass = FilesystemCache::class;
+            $adapterClass = FilesystemAdapter::class;
         }
         $this->adapter = new $adapterClass('seoanalyzer', $ttl);
     }
@@ -49,13 +49,14 @@ class Cache
     {
         $value = false;
         try {
-            $hasKey = $this->adapter->has($cacheKey);
+            $cachedItem = $this->adapter->getItem($cacheKey);
+            $hasKey = $cachedItem->isHit();
         } catch (InvalidArgumentException $e) {
             return false;
         }
         if ($hasKey) {
             try {
-                $value = $this->adapter->get($cacheKey);
+                $value = $cachedItem->get();
             } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
                 return false;
             }
@@ -74,7 +75,9 @@ class Cache
     public function set(string $cacheKey, $value, $ttl = null): bool
     {
         try {
-            return $this->adapter->set($cacheKey, $value, $ttl);
+            $cacheItem = $this->adapter->getItem($cacheKey);
+            $cacheItem->set($value)->expiresAfter($ttl);
+            return $this->adapter->save($cacheItem);
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             return false;
         }
