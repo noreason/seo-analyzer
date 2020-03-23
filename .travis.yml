@@ -3,10 +3,9 @@ language: php
 dist: trusty
 
 php:
-  - 7.1
   - 7.2
   - 7.3
-
+  - 7.4
 env:
   global:
     - CC_TEST_REPORTER_ID=72d58db2fba1e2cd7d118385aae8bb5b84cbf6b51fe263afc1c1ff47711ffd7a
